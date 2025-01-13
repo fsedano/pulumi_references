@@ -1,0 +1,171 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "knative.fullname" . }}-uninstall
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "knative.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-delete
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 20
+  parallelism: 1
+  completions: 1
+  template:
+    spec:
+      serviceAccountName: {{ include "knative.serviceAccountName" . }}
+      restartPolicy: Never
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      initContainers:
+        - name: wait-install-job
+          image: containers.cisco.com/devx/kubectl:v1.29.6
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              #!/bin/bash
+              set -e;
+              set -x;
+
+              # dont run if install job is still in progress
+              if kubectl -n {{ .Release.Namespace }} get job/{{ include "knative.fullname" . }}-install &> /dev/null; then
+                kubectl -n {{ .Release.Namespace }} wait --for=condition=complete job/{{ include "knative.fullname" . }}-install --timeout=300s &
+                success_pid=$!
+                kubectl -n {{ .Release.Namespace }} wait --for=condition=failed job/{{ include "knative.fullname" . }}-install --timeout=300s &
+                failure_pid=$!
+                echo "Waiting for install job to complete..."
+                wait -n $success_pid $failure_pid
+                echo "Done waiting for install job"
+              else
+                echo "Install job not found, continuing with uninstall"
+              fi
+        - name: download-yaml
+          image: containers.cisco.com/devx/kubectl:v1.29.6
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+          command: ["/bin/bash", "-c"]
+          env:
+{{ include "installer-envs" . | nindent 12 }}
+          args:
+            - |
+              #!/bin/bash
+              set -e;
+              set -x;
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/serving-crds.yaml \
+                https://github.com/knative/serving/releases/download/knative-{{ .Values.serving.version }}/serving-crds.yaml;
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/serving-core.yaml \
+                https://github.com/knative/serving/releases/download/knative-{{ .Values.serving.version }}/serving-core.yaml;
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/kourier.yaml \
+                https://github.com/knative-extensions/net-kourier/releases/download/knative-{{ .Values.serving.kourier.version }}/kourier.yaml;
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/eventing-crds.yaml \
+                https://github.com/knative/eventing/releases/download/knative-{{ .Values.eventing.version }}/eventing-crds.yaml;
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/eventing-core.yaml \
+                https://github.com/knative/eventing/releases/download/knative-{{ .Values.eventing.version }}/eventing-core.yaml;
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/eventing-kafka-controller.yaml \
+                https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-{{ .Values.eventing.version }}/eventing-kafka-controller.yaml;
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/eventing-kafka-channel.yaml \
+                https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-{{ .Values.eventing.version }}/eventing-kafka-channel.yaml;
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/eventing-kafka-broker.yaml \
+                https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-{{ .Values.eventing.version }}/eventing-kafka-broker.yaml;
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/in-memory-channel.yaml \
+                https://github.com/knative/eventing/releases/download/knative-{{ .Values.eventing.version }}/in-memory-channel.yaml;
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/mt-channel-broker.yaml \
+                https://github.com/knative/eventing/releases/download/knative-{{ .Values.eventing.version }}/mt-channel-broker.yaml;
+        - name: delete-resources
+          image: containers.cisco.com/devx/kubectl:v1.29.6
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              #!/bin/bash
+              set -e;
+              set -x;
+              set -u;
+              set -o pipefail;
+
+               # resource mapping not found for name: "queue-proxy" namespace: "knative-serving" from "/tmp/serving-core.yaml": no matches for kind "Image" in version "caching.internal.knative.dev/v1alpha1"
+              # ensure CRDs are installed first
+              kubectl apply -f /tmp/serving-crds.yaml --wait=true;
+              kubectl apply -f /tmp/serving-core.yaml --wait=true;
+              kubectl apply -f /tmp/eventing-crds.yaml --wait=true;
+
+              # TODO: higher level resources which create/manage other resources
+              # should be deleted first, otherwise child resources will be recreated
+              TYPES=(
+                "services.serving.knative.dev"
+                "triggers.eventing.knative.dev"
+                "sources.knative"
+                "sinks.knative"
+                "flows.knative"
+                "messaging.knative"
+                "eventing.knative"
+                "caching.internal.knative"
+                "networking.internal.knative"
+                "autoscaling.internal.knative"
+                "serving.knative"
+                "knative"
+              )
+
+              for TYPE in "${TYPES[@]}"; do
+                # 'or an invocation of utility exits with a value of 255, the xargs utility stops processing input'
+                kubectl api-resources -o name \
+                  | (grep "$TYPE" || true) \
+                  | xargs -I{} /bin/bash -c 'kubectl delete --all --all-namespaces --wait=true {} || exit 255'
+              done
+
+              rm -f /tmp/leftover-resources
+              kubectl api-resources -o name \
+                | (grep 'knative' || true) \
+                | xargs -I{} /bin/bash -c "kubectl get --all-namespaces -o name {} || exit 255" \
+                | tee /tmp/leftover-resources
+
+              if [ -s /tmp/leftover-resources ]; then
+                # raise error if any resources are left, so job is retried
+                echo "Leftover resources found:"
+                cat /tmp/leftover-resources
+                exit 1
+              fi
+
+        - name: uninstall
+          image: containers.cisco.com/devx/kubectl:v1.29.6
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              #!/bin/bash
+              set -e;
+              set -x;
+
+              # https://knative.dev/v1.15-docs/install/uninstall/
+              kubectl delete -f /tmp/eventing-kafka-controller.yaml --wait=true --ignore-not-found=true --cascade='foreground';
+              kubectl delete -f /tmp/eventing-kafka-broker.yaml --wait=true --ignore-not-found=true --cascade='foreground';
+              kubectl delete -f /tmp/mt-channel-broker.yaml --wait=true --ignore-not-found=true --cascade='foreground';
+              kubectl delete -f /tmp/eventing-kafka-channel.yaml --wait=true --ignore-not-found=true --cascade='foreground';
+              kubectl delete -f /tmp/in-memory-channel.yaml --wait=true --ignore-not-found=true --cascade='foreground';
+              kubectl delete -f /tmp/eventing-core.yaml --wait=true --ignore-not-found=true --cascade='foreground';
+              kubectl delete -f /tmp/kourier.yaml --wait=true --ignore-not-found=true --cascade='foreground';
+              kubectl delete -f /tmp/serving-core.yaml --wait=true --ignore-not-found=true --cascade='foreground';
+              kubectl delete -f /tmp/eventing-crds.yaml --wait=true --ignore-not-found=true --cascade='foreground';
+              kubectl delete -f /tmp/serving-crds.yaml --wait=true --ignore-not-found=true --cascade='foreground';
+      containers:
+        - name: uninstall-status
+          image: containers.cisco.com/devx/kubectl:v1.29.6
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              #!/bin/bash
+              echo "Uninstall completed successfully"

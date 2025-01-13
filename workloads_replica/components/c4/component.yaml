@@ -1,0 +1,22 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: c4
+spec:
+  type: image
+  lifeCycle: Permanent
+  dependencies:
+    workloads: []
+  image:
+    repository: nginxinc/nginx-unprivileged
+    tag: "1.27.0"
+    # repository: containers.cisco.com/devx/foo
+    # tag: ""
+  api:
+    rest:
+      - port: 3000
+        scope: private
+        name: poo
+        endpoints:
+          - type: pvt
+            path: /core/pvt

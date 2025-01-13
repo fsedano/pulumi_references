@@ -1,0 +1,44 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: schema-registry
+  namespace: kafka
+  syncWave: -3
+spec:
+  type: image
+  lifeCycle: Permanent
+  image:
+    repository: dockerhub.cisco.com/docker.io/confluentinc/cp-schema-registry
+    tag: 7.2.1
+  env:
+    - name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
+      value: PLAINTEXT://kafka.kafka.svc.cluster.local:9092
+    - name: SCHEMA_REGISTRY_HOST_NAME
+      value: registry-0-schemalaas
+    - name: SCHEMA_REGISTRY_LISTENERS
+      value: http://0.0.0.0:8081
+    - name: SCHEMA_REGISTRY_DEBUG
+      value: "false"
+    - name: SCHEMA_REGISTRY_KAFKASTORE_TOPIC
+      value: laas-schema-registry
+    - name: SCHEMA_REGISTRY_GROUP_ID
+      value: sr-1
+    - name: SCHEMA_REGISTRY_SCHEMA_REGISTRY_GROUP_ID
+      value: sr-1
+    - name: SCHEMA_REGISTRY_KAFKASTORE_GROUP_ID
+      value: sr-1
+    - name: SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR
+      value: "1"
+    - name: SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL
+      value: WARN
+    - name: SCHEMA_REGISTRY_KAFKASTORE_TIMEOUT_MS
+      value: "500"
+  api:
+    rest:
+      - port: 8081
+        scope: internal
+        name: api
+  exports:
+    env:
+      - name: KAFKA_REGISTRY_URL
+        value: http://schema-registry.kafka.svc.cluster.local:8081

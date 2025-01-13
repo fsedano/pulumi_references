@@ -1,0 +1,39 @@
+global:
+  storageClass: ""
+
+ui:
+  image: dockerhub-master.cisco.com/docker.io/memgraph/lab:latest
+  install: true
+image:
+  repository: dockerhub-master.cisco.com/docker.io/memgraph/memgraph:2.20.0
+
+username: laasv2
+password: laasv2
+
+dataStorageSize: 1Gi
+logStorageSize: 500Mi
+config:
+- "--also-log-to-stderr=true"
+- "--query_plan_cache_max_size=0"
+- "--data-recovery-on-startup=true"
+- "--telemetry-enabled=false"
+probes:
+  liveliness:
+    initialDelaySeconds: 10
+    periodSeconds: 60
+    failureThreshold: 3
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    failureThreshold: 3
+  startup:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 30
+resources:
+  limits:
+    cpu: "1"
+    memory: 2Gi
+  requests:
+    cpu: "1"
+    memory: 1Gi

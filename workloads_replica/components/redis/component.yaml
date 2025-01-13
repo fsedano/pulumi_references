@@ -1,0 +1,45 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: redis
+  namespace: redis
+  syncWave: -5
+spec:
+  type: helm
+  helm:
+    chartName: redis
+    chartRepo: https://charts.bitnami.com/bitnami/
+    chartVersion: "19.5.2"
+    values:
+      global:
+        imageRegistry: dockerhub.cisco.com/docker.io
+      master:
+        persistence:
+          size: 1Gi
+      commonConfiguration: |-
+        notify-keyspace-events KEA
+        activedefrag yes
+        maxmemory 35gb
+        maxmemory-policy volatile-ttl
+        maxmemory-samples 5
+        active-expire-effort 1
+        appendonly no
+        appendfsync everysec
+      host: redis-headless
+      architecture: standalone
+      replica:
+        replicaCount: 0
+      fullnameOverride: redis
+  exports:
+    secrets:
+      - name: redis
+        mountPath: /opt/data/api/tokens
+      # - name: configs
+      #   mountPath: /opt/config/api
+    env:
+      - name: REDIS_HOST
+        value: redis-headless.redis.svc.cluster.local
+      - name: REDIS_PASSWORD
+        secretkeyRef:
+          name: redis
+          key: redis-password

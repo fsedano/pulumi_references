@@ -1,0 +1,22 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: openfga
+  syncWave: -3
+spec:
+  dependencies:
+    workloads:
+      - postgres-db
+  type: helm
+  helm:
+    chartName: openfga
+    chartRepo: https://openfga.github.io/helm-charts
+    chartVersion: "0.2.8"
+  exports:
+    env:
+    - name: OPENFGA_HTTP_URL
+      value: "http://onedevx-openfga:8080"
+    - name: OPENFGA_PLAYGROUND_URL
+      value: "http://onedevx-openfga:3000"
+    - name: OPENFGA_GRPC_URL
+      value: "http://onedevx-openfga:8081"

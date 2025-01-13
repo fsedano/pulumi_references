@@ -1,0 +1,20 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Environment
+metadata:
+  name: replica
+spec:
+  namespace: example
+  tests:
+    e2e: false
+  ingress:
+    basepath: example
+    class: traefik
+    port: 8081
+  workloads:
+    - name: reflector
+    - name: core      
+    - name: postgres-db      
+    - name: wld1
+    - name: wld2
+    - name: wld3    
+    - name: openfga

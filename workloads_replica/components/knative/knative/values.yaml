@@ -1,0 +1,26 @@
+proxy:
+  enabled: true
+  httpProxy: "http://proxy.esl.cisco.com:80"
+  httpsProxy: "http://proxy.esl.cisco.com:80"
+  noProxy: ".cisco.com,.ciscointernal.com,localhost"
+
+# for kube 1.26, newest supported version is v1.12
+# https://github.com/knative/community/blob/main/mechanics/RELEASE-SCHEDULE.md
+# note: v1.12 is EOL since 2024-04-30
+eventing:
+  version:  v1.12.6
+serving:
+  version: v1.12.4
+  kourier:
+    # TODO: investigate why newer versions dont work
+    version: v1.8.3
+
+fullnameOverride: knative
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""

@@ -1,0 +1,9 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Workload
+metadata:
+  name: postgres-db
+spec:
+  components:
+  - name: postgres-db
+    repo: onedevx_deployer
+    path: reference/onedevx_replica

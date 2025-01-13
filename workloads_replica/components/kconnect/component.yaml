@@ -1,0 +1,36 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: kconnect
+  namespace: kafka
+  syncWave: -3
+spec:
+  type: image
+  lifeCycle: Permanent
+  image:
+    repository: quay.io/debezium/connect
+    tag: 1.9.7.Final
+  env:
+    - name: GROUP_ID
+      value: "1"
+    - name: KAFKA_TOPIC_REPLICATION_FACTOR
+      value: "1"
+    - name: KAFKA_TOPIC_IN_SYNC_REPLICAS
+      value: "1"
+    - name: CONFIG_STORAGE_TOPIC
+      value: rcdn.devxpf.lf62aca97e95564c36bs
+    - name: OFFSET_STORAGE_TOPIC
+      value: rcdn.devxpf.le0bc18d81f16c17d21s
+    - name: STATUS_STORAGE_TOPIC
+      value: rcdn.devxpf.l090fc6bfcaae027c29s
+    - name: CONNECT_TOPIC_CREATION_ENABLE
+      value: "false"
+  api:
+    rest:
+      - port: 8083
+        scope: internal
+        name: api
+  exports:
+    env:
+      - name: KAFKA_CONNECT_URL
+        value: http://kconnect.kafka.svc.cluster.local:8083

@@ -1,0 +1,30 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Workload
+metadata:
+  name: core
+spec:
+  components:  
+  - name: knative
+    repo: onedevx_deployer
+    path: reference/onedevx_replica 
+  - name: kafka
+    repo: onedevx_deployer
+    path: reference/onedevx_replica
+  - name: schema-registry
+    repo: onedevx_deployer
+    path: reference/onedevx_replica
+  - name: kconnect
+    repo: onedevx_deployer
+    path: reference/onedevx_replica
+  - name: dapr
+    repo: onedevx_deployer
+    path: reference/onedevx_replica
+  - name: otel
+    repo: onedevx_deployer
+    path: reference/onedevx_replica
+  - name: redis
+    repo: onedevx_deployer
+    path: reference/onedevx_replica
+  - name: memgraph
+    repo: onedevx_deployer
+    path: reference/onedevx_replica  

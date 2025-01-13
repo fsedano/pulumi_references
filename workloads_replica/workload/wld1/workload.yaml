@@ -1,0 +1,14 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Workload
+metadata:
+  name: wld1
+spec:
+  api:
+    prefix: /api/wld1
+  components:
+  - name: c1
+    repo: onedevx_deployer
+    path: reference/onedevx_replica
+  - name: c2
+    repo: onedevx_deployer
+    path: reference/onedevx_replica 

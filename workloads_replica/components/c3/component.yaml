@@ -1,0 +1,28 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: c3
+spec:
+  type: image
+  lifeCycle: Permanent
+  dependencies:
+    workloads: 
+      - core
+  image:
+    repository: nginxinc/nginx-unprivileged
+    tag: "1.27.0"
+  api:
+    rest:
+      - port: 5000
+        dapr: true
+        scope: internal
+        name: roo
+        endpoints:
+          - type: datapacket
+            path: /core/datapacket
+      - port: 3000
+        scope: private
+        name: poo
+        endpoints:
+          - type: business
+            path: /core/business

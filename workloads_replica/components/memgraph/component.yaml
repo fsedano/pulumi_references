@@ -1,0 +1,28 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: memgraph
+  namespace: memgraph
+  syncWave: -5
+spec:
+  type: helm
+  image:
+    repository: dockerhub-master.cisco.com/docker.io/memgraph/memgraph
+    tag: 2.20.1
+  helm:
+    chartName: memgraph
+    chartVersion: "v0.0.1"
+    localChartPath: "./memgraph"
+    values:
+      dataStorageSize: 2Gi
+      logStorageSize: 200Mi
+  exports:
+    env:
+      - name: MEMGRAPH_DB_URL
+        value: bolt://memgraph-main.memgraph.svc.cluster.local:7687
+      - name: MEMGRAPH_DB_USER
+        value: app
+      - name: MEMGRAPH_DB_PASSWORD
+        value: app
+      - name: GRAPHMODE
+        value: memgraph

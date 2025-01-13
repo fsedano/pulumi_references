@@ -1,0 +1,61 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: kafka
+  namespace: kafka
+  syncWave: -5
+spec:
+  type: helm
+  helm:
+    chartName: kafka
+    chartRepo: https://charts.bitnami.com/bitnami
+    chartVersion: "29.3.7"
+    localChartPath: ./kafka-29.3.7.tgz
+    values:
+      fullnameOverride: kafka
+      sasl:
+        enabledMechanisms: PLAIN
+      listeners:
+        client:
+          protocol: PLAINTEXT
+        securityProtocolMap: CLIENT:PLAINTEXT,INTERNAL:SASL_PLAINTEXT,CONTROLLER:SASL_PLAINTEXT
+      networkPolicy:
+        enabled: false
+      zookeeper:
+        persistence:
+          size: 500Mi
+      broker:
+        persistence:
+          size: 500Mi
+        logPersistence:
+          size: 100Mi
+      controller:
+        persistence:
+          size: 500Mi
+        logPersistence:
+          size: 100Mi
+        # default value from chart
+        replicaCount: 3
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "0.5"
+          limits:
+            memory: "1.5Gi"
+            cpu: "1.5"
+  exports:
+    env:
+      - name: USE_CAAS_KAFKA
+        value: "false"
+      - name: SHORTEN_KAFKA_TOPIC_NAMES
+        value: "true"
+      - name: KAFKA_SERVER
+        value: kafka.kafka.svc.cluster.local
+      - name: KAFKA_PORT
+        value: "9092"
+      - name: KAFKA_FULL_SERVER_URL
+        value: kafka.kafka.svc.cluster.local:9092
+      - name: BOOTSTRAP_SERVERS
+        value: kafka.kafka.svc.cluster.local:9092
+      - name: KAFKA_TOPIC_PREFIX
+        value: laas

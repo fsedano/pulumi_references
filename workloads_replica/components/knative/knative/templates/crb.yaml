@@ -1,0 +1,30 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "knative.fullname" . }}-crd-binding
+  labels:
+    {{- include "knative.labels" . | nindent 4 }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "knative.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace | default "knative" }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "knative.fullname" . }}-crd-installer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "knative.fullname" . }}-non-crd-binding
+  labels:
+    {{- include "knative.labels" . | nindent 4 }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "knative.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace | default "knative" }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "knative.fullname" . }}-non-crd-installer
+  apiGroup: rbac.authorization.k8s.io
+

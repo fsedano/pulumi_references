@@ -1,0 +1,12 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: reflector
+  syncWave: -10
+  namespace: reflector
+spec:
+  type: helm
+  helm:
+    chartName: reflector
+    chartRepo: https://emberstack.github.io/helm-charts
+    chartVersion: "7.1.288"

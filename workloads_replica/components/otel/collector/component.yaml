@@ -1,0 +1,26 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: otel
+  namespace: otel
+  syncWave: -4
+spec:
+  type: helm
+  helm:
+    chartName: opentelemetry-collector
+    chartRepo: https://open-telemetry.github.io/opentelemetry-helm-charts/
+    values:
+      image:
+        repository: "otel/opentelemetry-collector-k8s"
+      mode: deployment
+  exports:
+    env:
+      - name: OTEL_HOST
+        value: opentelemetry-collector
+      - name: OTEL_OTLP
+        value: "4317"
+      - name: OTEL_OTLP_HTTP
+        value: "4318"
+      - name: OTEL_JAEGER_GRPC
+        value: "14250"
+        

@@ -1,0 +1,19 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: dapr
+  namespace: dapr-system
+  syncWave: -4
+spec:
+  type: helm
+  helm:
+    chartName: dapr
+    chartRepo: https://dapr.github.io/helm-charts
+    chartVersion: "1.14.4"
+    values:
+      global:
+        ha:
+          enabled: false
+      dapr_scheduler:
+        cluster:
+          inMemoryStorage: true

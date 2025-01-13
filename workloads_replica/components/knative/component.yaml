@@ -1,0 +1,20 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: knative
+  syncWave: -10
+spec:
+  type: helm
+  helm:
+    chartName: knative
+    chartVersion: "v0.0.1"
+    localChartPath: "./knative"
+    # have to set this, because chart has hooks
+    forceCompatibilityMode: true
+    values:
+      eventing:
+        version:  v1.15.2
+      serving:
+        version: v1.15.2
+        kourier:
+          version: v1.15.1

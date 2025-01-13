@@ -1,0 +1,18 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: gc
+spec:
+  type: image
+  lifeCycle: Recurring
+  schedule: "20 */6 * * *"
+  dependencies:
+    workloads:
+      - core
+  image:
+    repository: quay.io/curl/curl
+    tag: 8.7.1
+    entrypoint: ["/bin/sh", "-c"]
+    args:
+      - >
+        sleep 10

@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: memgraph-main
+spec:
+  selector:
+    matchLabels:
+      app: memgraph-db-main
+  serviceName: "memgraph-main"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: memgraph-db-main
+    spec:
+      initContainers:
+        - name: init-volume-mounts
+          image: {{ .Values.image.repository | required "Image is required"}}
+          volumeMounts:
+            - name: memgraph-main-lib-storage
+              mountPath: /var/lib/memgraph
+            - name: memgraph-main-log-storage
+              mountPath: /var/log/memgraph
+          command: ["/bin/sh", "-c"]
+          args:
+            - >
+              chown -R memgraph:memgraph /var/lib/memgraph;
+              chown -R memgraph:memgraph /var/log/memgraph;
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["all"]
+              add: ["CHOWN"]
+            runAsUser: 0
+            runAsNonRoot: false
+      volumes:
+        - name: memgraph-main-lib-storage
+          persistentVolumeClaim:
+            claimName: memgraph-main-lib-storage
+        - name: memgraph-main-log-storage
+          persistentVolumeClaim:
+            claimName: memgraph-main-log-storage
+      containers:
+        - name: memgraph
+          image: {{ .Values.image.repository | required "Image is required"}}
+          args:
+          {{- range .Values.config }}
+          - {{ . | quote }}
+          {{- end }}
+          ports:
+            - name: bolt
+              containerPort: 7687
+            - name: websocket
+              containerPort: 7444
+            - name: http
+              containerPort: 9091
+          livenessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - echo 'RETURN 0;' | mgconsole --host localhost --port 7687 -username {{ .Values.username }} -password {{ .Values.password }}
+            initialDelaySeconds: {{ .Values.probes.liveliness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveliness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveliness.failureThreshold }}
+          readinessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - echo 'RETURN 0;' | mgconsole --host localhost --port 7687 -username {{ .Values.username }} -password {{ .Values.password }}
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          startupProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - echo 'RETURN 0;' | mgconsole --host localhost --port 7687 -username {{ .Values.username }} -password {{ .Values.password }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            initialDelaySeconds: {{ .Values.probes.startup.initialDelaySeconds }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: memgraph-main-lib-storage
+              mountPath: /var/lib/memgraph
+            - name: memgraph-main-lib-storage
+              mountPath: /var/log/memgraph
+  volumeClaimTemplates:
+    - metadata:
+        name: memgraph-main-lib-storage
+      spec:
+        accessModes:
+        - "ReadWriteOnce"
+        storageClassName: {{ .Values.global.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.dataStorageSize }}
+    - metadata:
+        name: memgraph-main-log-storage
+      spec:
+        accessModes:
+        - "ReadWriteOnce"
+        storageClassName: {{ .Values.global.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.logStorageSize }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: memgraph-db-main
+  name: memgraph-main
+spec:
+  ports:
+  - port: 7687
+    protocol: TCP
+    targetPort: 7687
+  selector:
+    app: memgraph-db-main
+  type: ClusterIP

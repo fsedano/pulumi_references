@@ -1,0 +1,164 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "knative.fullname" . }}-install
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "knative.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 2
+  parallelism: 1
+  completions: 1
+  template:
+    spec:
+      serviceAccountName: {{ include "knative.serviceAccountName" . }}
+      restartPolicy: Never
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      initContainers:
+        - name: check-uninstall-job
+          image: containers.cisco.com/devx/kubectl:v1.29.6
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              #!/bin/bash
+              set -e;
+              set -x;
+
+              # dont run if uninstall job is still in progress
+              if kubectl -n {{ .Release.Namespace }} get job/{{ include "knative.fullname" . }}-uninstall &> /dev/null; then
+                kubectl -n {{ .Release.Namespace }} wait --for=condition=complete job/{{ include "knative.fullname" . }}-uninstall --timeout=300s &
+                success_pid=$!
+                kubectl -n {{ .Release.Namespace }} wait --for=condition=failed job/{{ include "knative.fullname" . }}-uninstall --timeout=300s &
+                failure_pid=$!
+                echo "Waiting for uninstall job to complete..."
+                wait -n $success_pid $failure_pid
+                echo "Done waiting for uninstall job"
+              fi
+        - name: download-yaml
+          image: containers.cisco.com/devx/kubectl:v1.29.6
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+          command: ["/bin/bash", "-c"]
+          env:
+{{ include "installer-envs" . | nindent 12 }}
+          args:
+            - |
+              #!/bin/bash
+              set -e;
+              set -x;
+
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/serving-crds.yaml \
+                https://github.com/knative/serving/releases/download/knative-{{ .Values.serving.version }}/serving-crds.yaml
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/serving-core.yaml \
+                https://github.com/knative/serving/releases/download/knative-{{ .Values.serving.version }}/serving-core.yaml
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/kourier.yaml \
+                https://github.com/knative-extensions/net-kourier/releases/download/knative-{{ .Values.serving.kourier.version }}/kourier.yaml
+
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/eventing-crds.yaml \
+                https://github.com/knative/eventing/releases/download/knative-{{ .Values.eventing.version }}/eventing-crds.yaml;
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/eventing-core.yaml \
+                https://github.com/knative/eventing/releases/download/knative-{{ .Values.eventing.version }}/eventing-core.yaml;
+
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/eventing-kafka-post-install.yaml \
+                https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-{{ .Values.eventing.version }}/eventing-kafka-post-install.yaml
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/eventing-kafka-controller.yaml \
+                https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-{{ .Values.eventing.version }}/eventing-kafka-controller.yaml
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/eventing-kafka-channel.yaml \
+                https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-{{ .Values.eventing.version }}/eventing-kafka-channel.yaml
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/eventing-kafka-broker.yaml \
+                https://github.com/knative-extensions/eventing-kafka-broker/releases/download/knative-{{ .Values.eventing.version }}/eventing-kafka-broker.yaml
+
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/in-memory-channel.yaml \
+                https://github.com/knative/eventing/releases/download/knative-{{ .Values.eventing.version }}/in-memory-channel.yaml
+              curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/mt-channel-broker.yaml \
+                https://github.com/knative/eventing/releases/download/knative-{{ .Values.eventing.version }}/mt-channel-broker.yaml
+        - name: install
+          image: containers.cisco.com/devx/kubectl:v1.29.6
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              #!/bin/bash
+              set -e;
+              set -x;
+
+              # create namespaces
+              kubectl create ns knative-serving --dry-run=client -o yaml | kubectl apply --wait=true -f -;
+              kubectl create ns knative-eventing --dry-run=client -o yaml | kubectl apply --wait=true -f -;
+
+              # TODO: should also install post install yamls? e.g. eventing-post-install.yaml? serving-post-install-jobs.yaml?
+              # i think these are needed if version is being upgraded
+
+              # serving
+              kubectl apply -f /tmp/serving-crds.yaml --wait=true;
+              kubectl apply -f /tmp/serving-core.yaml --wait=true;
+              kubectl apply -f /tmp/kourier.yaml --wait=true;
+
+              # kubectl -n knative-serving patch deployment/net-kourier-controller --type merge \
+              #   --patch '{"spec":{"strategy":{"type":"Recreate","rollingUpdate":null}}}';
+              # kubectl -n knative-serving set env deployment/net-kourier-controller KUBERNETES_MIN_VERSION=1.26.0-0;
+
+              kubectl -n knative-serving patch configmap/config-defaults --type merge \
+                --patch '{"data":{"max-revision-timeout-seconds":"3600"}}';
+              kubectl -n knative-serving patch configmap/config-network --type merge \
+                --patch '{"data":{"ingress-class":"kourier.ingress.networking.knative.dev"}}';
+
+              kubectl -n knative-serving patch configmap/config-observability --type merge \
+                --patch '{"data":{"metrics.backend-destination":"prometheus","request-metrics-backend-destination":"prometheus"}}'
+
+              # avoid using nodeports we are expecting to use in e2e tests
+              kubectl -n kourier-system patch svc/kourier --type merge \
+                --patch '{"spec":{"ports":[{"name":"http2","nodePort":32082,"port":80,"protocol":"TCP","targetPort":8080},{"name":"https","nodePort":32445,"port":443,"protocol":"TCP","targetPort":8443}]}}'
+              # so kourier lb service doesnt remain pending indefinitely
+              kubectl -n kourier-system patch svc/kourier --type merge \
+                --patch '{"spec":{"type":"NodePort"}}'
+
+              SERVING_DEPLOYMENTS="activator autoscaler webhook net-kourier-controller controller"
+              kubectl -n kourier-system rollout status deployment 3scale-kourier-gateway --timeout=300s --watch=true;
+              kubectl -n knative-serving rollout status deployment $SERVING_DEPLOYMENTS --timeout=300s --watch=true;
+
+              # eventing
+              kubectl apply -f /tmp/eventing-crds.yaml --wait=true;
+              kubectl apply -f /tmp/eventing-core.yaml --wait=true;
+              kubectl apply -f /tmp/eventing-kafka-controller.yaml --wait=true;
+              kubectl apply -f /tmp/eventing-kafka-channel.yaml --wait=true;
+              kubectl apply -f /tmp/eventing-kafka-post-install.yaml --wait=true;
+              kubectl apply -f /tmp/eventing-kafka-broker.yaml --wait=true;
+              kubectl apply -f /tmp/in-memory-channel.yaml --wait=true;
+              kubectl apply -f /tmp/mt-channel-broker.yaml --wait=true;
+
+              EVENTING_DEPLOYMENTS="eventing-controller eventing-webhook"
+              IMC_DEPLOYMENTS="imc-dispatcher imc-controller"
+              MT_DEPLOYMENTS="mt-broker-filter mt-broker-ingress mt-broker-controller"
+              KAFKA_DEPLOYMENTS="kafka-channel-dispatcher kafka-channel-receiver kafka-broker-dispatcher kafka-broker-receiver kafka-webhook-eventing kafka-controller"
+
+              # TODO: wait on kafka deployments as well. Needs to be configured correctly still
+              ALL_DEPLOYMENTS="$EVENTING_DEPLOYMENTS $IMC_DEPLOYMENTS $MT_DEPLOYMENTS"
+
+              kubectl -n knative-eventing rollout status deployment $ALL_DEPLOYMENTS --timeout=300s --watch=true;
+
+              kubectl -n knative-eventing patch configmap/config-observability --type merge \
+                --patch '{"data":{"metrics.backend-destination":"prometheus","request-metrics-backend-destination":"prometheus"}}'
+
+              # check serving deployments again
+              kubectl -n knative-serving rollout status deployment $SERVING_DEPLOYMENTS --timeout=300s --watch=true;
+      containers:
+        - name: install-status
+          image: containers.cisco.com/devx/kubectl:v1.29.6
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              #!/bin/bash
+              echo "Knative Serving and Eventing installation completed"

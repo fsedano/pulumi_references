@@ -1,0 +1,75 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: postgres-db
+  syncWave: -5
+  namespace: postgres     # need to know for POSTGRES_HOST
+spec:
+  type: helm
+  helm:
+    chartName: postgresql
+    chartRepo: https://charts.bitnami.com/bitnami/
+    chartVersion: "15.5.17"
+    localChartPath: "../postgresql-15.5.17.tgz"
+    values:
+      global:
+        imageRegistry: dockerhub.cisco.com/docker.io
+      auth:
+        # TODO: provide existing secret to chart
+        enablePostgresUser: true
+        postgresPassword: "password"
+        username: "user"
+        password: "password"
+      architecture: standalone
+      fullnameOverride: devxpf-postgres
+      primary:
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        configuration: |-
+          listen_addresses = '*'
+          wal_level = logical
+          max_wal_senders = 4
+          max_replication_slots = 10
+          max_slot_wal_keep_size = 100MB
+
+          max_connections = 250
+          shared_buffers = 256MB
+          effective_cache_size = 1536MB
+          maintenance_work_mem = 128MB
+
+          # note: this is low
+          work_mem = 1000kB
+
+          log_destination = 'stderr'
+          logging_collector = off
+          log_directory = 'pg_log'
+          log_filename= 'postgresql-%Y-%m-%d_%H%M%S.log'
+
+        persistence:
+          #storageClass: "local-path"
+          size: 1Gi
+      readReplicas:
+        replicaCount: 0
+        persistence:
+          #storageClass: "local-path"
+          size: 1Gi
+  exports:
+    secrets:
+      - name: devxpf-postgres
+        mountPath: /secrets/postgres-db
+    env:
+      - name: POSTGRES_HOST
+        value: devxpf-postgres.postgres.svc.cluster.local
+      - name: POSTGRES_PORT
+        value: "5432"
+      - name: POSTGRES_ROOT_USER
+        value: postgres
+      - name: POSTGRES_ROOT_PASSWORD
+        secretkeyRef:
+          name: devxpf-postgres
+          key: postgres-password

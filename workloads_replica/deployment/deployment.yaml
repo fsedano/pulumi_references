@@ -1,0 +1,10 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Deployment
+metadata:
+  name: replica
+spec:
+  namespace: dev
+  environment:
+    name: replica
+  ingress:    
+    address: localhost

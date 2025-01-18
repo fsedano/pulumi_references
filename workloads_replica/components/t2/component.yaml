@@ -6,23 +6,11 @@ spec:
   type: image
   lifeCycle: Permanent
   image:
-    repository: nginxinc/nginx-unprivileged
-    tag: "1.27.0"
+    repository: k3d-myreg:5000/app1
+    tag: "latest"
   api:
     rest:
       - port: 8000
-        scope: public
-        name: foo
-        endpoints:
-          - type: details
-            path: /core/details2
-      - port: 3000
-        scope: private
-        name: poo
-        endpoints:
-          - type: business
-            path: /core/business3
-      - port: 5000
         dapr: true
         scope: internal
         name: roo

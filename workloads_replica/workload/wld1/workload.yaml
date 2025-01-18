@@ -8,7 +8,7 @@ spec:
   components:
   - name: c1
     repo: pulumi_references
-    path: reference/onedevx_replica
+    path: workloads_replica/components
   - name: c2
     repo: pulumi_references
     path: workloads_replica/components

@@ -22,6 +22,14 @@ spec:
         endpoints:
           - type: business
             path: /core/business3
+      - port: 5000
+        dapr: true
+        scope: internal
+        name: roo
+        endpoints:
+          - type: transactions
+            path: /core/transactions3
+
   volumes:
     - name: tmp
       type: empty

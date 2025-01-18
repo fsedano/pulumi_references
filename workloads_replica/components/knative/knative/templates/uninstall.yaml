@@ -22,7 +22,7 @@ spec:
           emptyDir: {}
       initContainers:
         - name: wait-install-job
-          image: bitnami/kubectl:v1.29.6
+          image: bitnami/kubectl:latest
           volumeMounts:
             - name: tmp
               mountPath: /tmp
@@ -46,7 +46,7 @@ spec:
                 echo "Install job not found, continuing with uninstall"
               fi
         - name: download-yaml
-          image: bitnami/kubectl:v1.29.6
+          image: bitnami/kubectl:latest
           volumeMounts:
             - mountPath: /tmp
               name: tmp
@@ -79,7 +79,7 @@ spec:
               curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/mt-channel-broker.yaml \
                 https://github.com/knative/eventing/releases/download/knative-{{ .Values.eventing.version }}/mt-channel-broker.yaml;
         - name: delete-resources
-          image: bitnami/kubectl:v1.29.6
+          image: bitnami/kubectl:latest
           volumeMounts:
             - name: tmp
               mountPath: /tmp
@@ -136,7 +136,7 @@ spec:
               fi
 
         - name: uninstall
-          image: bitnami/kubectl:v1.29.6
+          image: bitnami/kubectl:latest
           volumeMounts:
             - name: tmp
               mountPath: /tmp
@@ -160,7 +160,7 @@ spec:
               kubectl delete -f /tmp/serving-crds.yaml --wait=true --ignore-not-found=true --cascade='foreground';
       containers:
         - name: uninstall-status
-          image: bitnami/kubectl:v1.29.6
+          image: bitnami/kubectl:latest
           volumeMounts:
             - name: tmp
               mountPath: /tmp

@@ -7,7 +7,7 @@ metadata:
 spec:
   type: helm
   image:
-    repository: dockerhub-master.cisco.com/docker.io/memgraph/memgraph
+    repository: memgraph/memgraph
     tag: 2.20.1
   helm:
     chartName: memgraph

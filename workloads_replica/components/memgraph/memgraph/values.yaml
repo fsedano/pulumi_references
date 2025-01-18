@@ -2,10 +2,10 @@ global:
   storageClass: ""
 
 ui:
-  image: dockerhub-master.cisco.com/docker.io/memgraph/lab:latest
+  image: memgraph/lab:latest
   install: true
 image:
-  repository: dockerhub-master.cisco.com/docker.io/memgraph/memgraph:2.20.0
+  repository: memgraph/memgraph:2.20.0
 
 username: laasv2
 password: laasv2

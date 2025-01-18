@@ -1,0 +1,14 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Workload
+metadata:
+  name: wltiny1
+spec:
+  api:
+    prefix: /api/wld1
+  components:
+  - name: t1
+    repo: pulumi_references
+    path: workloads_replica/components
+  - name: t2
+    repo: pulumi_references
+    path: workloads_replica/components

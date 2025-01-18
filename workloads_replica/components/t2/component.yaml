@@ -1,0 +1,36 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: t2
+spec:
+  type: image
+  lifeCycle: Permanent
+  image:
+    repository: nginxinc/nginx-unprivileged
+    tag: "1.27.0"
+  api:
+    rest:
+      - port: 8000
+        scope: public
+        name: foo
+        endpoints:
+          - type: details
+            path: /core/details
+      - port: 5000
+        dapr: true
+        scope: internal
+        name: roo
+        endpoints:
+          - type: transactions
+            path: /core/transactions
+      - port: 3000
+        scope: private
+        name: poo
+        endpoints:
+          - type: business
+            path: /core/business  
+  volumes:
+    - name: tmp
+      type: empty
+      mountPath: /tmp
+

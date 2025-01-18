@@ -11,4 +11,4 @@ spec:
     class: traefik
     port: 8081
   workloads:
-    - name: wld1
+    - name: wltiny1

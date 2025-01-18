@@ -8,6 +8,7 @@ spec:
   type: helm
   helm:
     chartName: knoperator
+    forceCompatibilityMode: true
     chartRepo: https://fsedano.github.io/helmcharts
     chartVersion: "0.1.0"
     values:

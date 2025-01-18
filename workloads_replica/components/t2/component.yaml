@@ -16,13 +16,6 @@ spec:
         endpoints:
           - type: details
             path: /core/details2
-      - port: 5000
-        dapr: true
-        scope: internal
-        name: roo
-        endpoints:
-          - type: transactions
-            path: /core/transactions2
       - port: 3000
         scope: private
         name: poo

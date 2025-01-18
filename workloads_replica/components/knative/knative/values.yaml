@@ -1,5 +1,5 @@
 proxy:
-  enabled: true
+  enabled: false
   httpProxy: "http://proxy.esl.cisco.com:80"
   httpsProxy: "http://proxy.esl.cisco.com:80"
   noProxy: ".cisco.com,.ciscointernal.com,localhost"

@@ -7,4 +7,10 @@ spec:
   - name: knativeoperator
     repo: pulumi_references
     path: workloads_replica/components
+  - name: kneventing
+    repo: pulumi_references
+    path: workloads_replica/components
+  - name: knserving
+    repo: pulumi_references
+    path: workloads_replica/components
 

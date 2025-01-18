@@ -1,0 +1,10 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Workload
+metadata:
+  name: knative
+spec:
+  components:
+  - name: knativeoperator
+    repo: pulumi_references
+    path: workloads_replica/components
+

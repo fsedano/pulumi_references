@@ -13,3 +13,4 @@ spec:
   workloads:
     - name: wltiny1
     - name: wldapr
+    - name: knative

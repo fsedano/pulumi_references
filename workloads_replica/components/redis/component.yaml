@@ -12,7 +12,7 @@ spec:
     chartVersion: "19.5.2"
     values:
       global:
-        imageRegistry: dockerhub.cisco.com/docker.io
+        imageRegistry: docker.io
       master:
         persistence:
           size: 1Gi

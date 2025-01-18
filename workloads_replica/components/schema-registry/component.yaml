@@ -8,7 +8,7 @@ spec:
   type: image
   lifeCycle: Permanent
   image:
-    repository: dockerhub.cisco.com/docker.io/confluentinc/cp-schema-registry
+    repository: docker.io/confluentinc/cp-schema-registry
     tag: 7.2.1
   env:
     - name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS

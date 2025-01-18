@@ -13,7 +13,7 @@ spec:
     localChartPath: "../postgresql-15.5.17.tgz"
     values:
       global:
-        imageRegistry: dockerhub.cisco.com/docker.io
+        imageRegistry: docker.io
       auth:
         # TODO: provide existing secret to chart
         enablePostgresUser: true

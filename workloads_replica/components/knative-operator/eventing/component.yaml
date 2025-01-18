@@ -1,0 +1,14 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: kneventing
+  namespace: knative-eventing
+  syncWave: -5
+spec:
+  type: helm
+  helm:
+    chartName: kneventing
+    chartRepo: https://fsedano.github.io/helmcharts
+    chartVersion: "0.1.0"
+    values:
+      test: true

@@ -1,0 +1,14 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: knativeoperator
+  namespace: knativeoperator
+  syncWave: -10
+spec:
+  type: helm
+  helm:
+    chartName: knoperator
+    chartRepo: https://fsedano.github.io/helmcharts
+    chartVersion: "0.1.0"
+    values:
+      test: true

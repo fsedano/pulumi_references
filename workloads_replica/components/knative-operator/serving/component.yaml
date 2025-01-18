@@ -1,0 +1,14 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Component
+metadata:
+  name: knserving
+  namespace: knative-serving
+  syncWave: -6
+spec:
+  type: helm
+  helm:
+    chartName: knserving
+    chartRepo: https://fsedano.github.io/helmcharts
+    chartVersion: "0.1.0"
+    values:
+      test: true

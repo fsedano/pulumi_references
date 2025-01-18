@@ -1,0 +1,12 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Workload
+metadata:
+  name: wldapr
+spec:
+  api:
+    prefix: /api/dapr
+  components:
+  - name: dapr
+    repo: pulumi_references
+    path: workloads_replica/components
+

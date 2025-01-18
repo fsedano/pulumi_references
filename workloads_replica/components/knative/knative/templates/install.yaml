@@ -22,7 +22,7 @@ spec:
           emptyDir: {}
       initContainers:
         - name: check-uninstall-job
-          image: containers.cisco.com/devx/kubectl:v1.29.6
+          image: bitnami/kubectl:v1.29.6
           volumeMounts:
             - name: tmp
               mountPath: /tmp
@@ -44,7 +44,7 @@ spec:
                 echo "Done waiting for uninstall job"
               fi
         - name: download-yaml
-          image: containers.cisco.com/devx/kubectl:v1.29.6
+          image: bitnami/kubectl:v1.29.6
           volumeMounts:
             - mountPath: /tmp
               name: tmp
@@ -83,7 +83,7 @@ spec:
               curl --retry 3 --retry-delay 5 --retry-max-time 20 --connect-timeout 10 --fail -sSL -o /tmp/mt-channel-broker.yaml \
                 https://github.com/knative/eventing/releases/download/knative-{{ .Values.eventing.version }}/mt-channel-broker.yaml
         - name: install
-          image: containers.cisco.com/devx/kubectl:v1.29.6
+          image: bitnami/kubectl:v1.29.6
           volumeMounts:
             - mountPath: /tmp
               name: tmp
@@ -156,7 +156,7 @@ spec:
               kubectl -n knative-serving rollout status deployment $SERVING_DEPLOYMENTS --timeout=300s --watch=true;
       containers:
         - name: install-status
-          image: containers.cisco.com/devx/kubectl:v1.29.6
+          image: bitnami/kubectl:v1.29.6
           command: ["/bin/bash", "-c"]
           args:
             - |

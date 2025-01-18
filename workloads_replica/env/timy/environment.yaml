@@ -1,0 +1,14 @@
+apiVersion: devx.cisco.com/v1alpha1
+kind: Environment
+metadata:
+  name: tiny
+spec:
+  namespace: exampletiny
+  tests:
+    e2e: false
+  ingress:
+    basepath: example
+    class: traefik
+    port: 8081
+  workloads:
+    - name: wld1

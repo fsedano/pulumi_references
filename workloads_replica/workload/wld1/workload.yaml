@@ -11,4 +11,4 @@ spec:
     path: reference/onedevx_replica
   - name: c2
     repo: pulumi_references
-    path: reference/onedevx_replica 
+    path: workloads_replica/components
